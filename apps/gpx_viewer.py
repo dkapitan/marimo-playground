@@ -5,6 +5,8 @@
 #     "gpxpy>=1.6.2",
 #     "marimo>=0.18.3",
 # ]
+# [tool.marimo.display]
+# theme = "dark"
 # ///
 import marimo
 
