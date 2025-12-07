@@ -2,6 +2,7 @@
 # requires-python = ">=3.12"
 # dependencies = [
 #     "folium>=0.20.0",
+#     "fsspec==2025.12.0",
 #     "gpxpy>=1.6.2",
 #     "marimo>=0.18.3",
 # ]
@@ -11,7 +12,7 @@
 
 import marimo
 
-__generated_with = "0.14.10"
+__generated_with = "0.18.3"
 app = marimo.App(width="medium")
 
 
@@ -58,8 +59,8 @@ def _():
     def get_gpx_data(file_path=None, name=None, contents=None, upload=False):
         """Parses contents of GPX file and returns name, center_lat, center_lon, and points."""
         if not upload and file_path:
-            with open(file_path, "r") as gpx_file:
-                name = gpx_file.name
+            with fs.open(file_path, "r") as gpx_file:
+                name = file_path
                 gpx = parse(gpx_file)
 
         if upload:
@@ -122,9 +123,9 @@ def _(mo):
     )
     header = mo.md("""
         ## Simple .gpx tracks viewer
-    
+
         Always wanted to have your little archive of your favourite trail running or gravelbike rides? You can clone [this repo](https://github.com/dkapitan/marimo-playground) to create your on online archive on GitHub.
-    
+
         If you want to test it, toggle the switch and upload your own files to play around. It should work with `.gpx` files downloaded from Strava, Garmin or Komoot.""")
     return files, header, tiles, upload
 
