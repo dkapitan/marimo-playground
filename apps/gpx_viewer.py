@@ -8,9 +8,10 @@
 # [tool.marimo.display]
 # theme = "dark"
 # ///
+
 import marimo
 
-__generated_with = "0.18.3"
+__generated_with = "0.14.10"
 app = marimo.App(width="medium")
 
 
@@ -27,8 +28,14 @@ def _():
 
     from gpxpy import parse
     from gpxpy.geo import haversine_distance
+    from fsspec.implementations.github import GithubFileSystem
     import folium
     from folium.plugins import MousePosition
+
+
+    # reading from GitHub repo by default
+    ORG, REPO = "dkapitan", "marimo-playground"
+    fs = GithubFileSystem(ORG, REPO)
 
 
     @dataclass
@@ -48,13 +55,17 @@ def _():
                 self.centre = (52.0, 5.0)  # Default fallback (Netherlands approx)
 
 
-    def get_gpx_data(name, contents):
+    def get_gpx_data(file_path=None, name=None, contents=None, upload=False):
         """Parses contents of GPX file and returns name, center_lat, center_lon, and points."""
-        # with open(file_path, "r") as gpx_file:
-        #     gpx = parse(gpx_file)
-        gpx = parse(contents)
-    
-        name = name
+        if not upload and file_path:
+            with open(file_path, "r") as gpx_file:
+                name = gpx_file.name
+                gpx = parse(gpx_file)
+
+        if upload:
+            name = name
+            gpx = parse(contents)
+
         points = []
         for track in gpx.tracks:
             if track.name:
@@ -91,13 +102,12 @@ def _():
         MousePosition().add_to(m)
 
         return m
-    return get_gpx_data, map_track
+    return fs, get_gpx_data, map_track
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    HERE = mo.notebook_location()
-
+    upload = mo.ui.switch()
     files = mo.ui.file(filetypes=[".gpx"], kind="area", multiple=True)
     tiles = mo.ui.dropdown(
         options=[
@@ -110,24 +120,46 @@ def _(mo):
         value="Stadia Outdoors",
         label="Choose a map style",
     )
-    return files, tiles
+    header = mo.md("""
+        ## Simple .gpx tracks viewer
+    
+        Always wanted to have your little archive of your favourite trail running or gravelbike rides? You can clone [this repo](https://github.com/dkapitan/marimo-playground) to create your on online archive on GitHub.
+    
+        If you want to test it, toggle the switch and upload your own files to play around. It should work with `.gpx` files downloaded from Strava, Garmin or Komoot.""")
+    return files, header, tiles, upload
 
 
-@app.cell
-def _(files, mo):
-    mo.left(files)
+@app.cell(hide_code=True)
+def _(files, header, mo, upload):
+    if not upload.value:
+        display = mo.hstack([header, mo.hstack([mo.md("upload your own files").right(), upload])], widths=[1, 1])
+    else:
+        display = mo.hstack(
+            [header, mo.vstack([mo.hstack([mo.md("upload your own files").right(), upload]), files])], widths=[1, 1]
+        )
+    display
     return
 
 
 @app.cell(hide_code=True)
-def _(files, get_gpx_data, map_track, mo, tiles):
+def _(files, fs, get_gpx_data, map_track, mo, tiles, upload):
     trails = []
-    for file in files.value:
-        trail = get_gpx_data(file.name, file.contents)
-        meta = mo.vstack(
-            [mo.md(trail.name), mo.stat(label="trail length", value=str(round(trail.length / 1_000, 1)) + " km")]
-        )
-        trails.append(mo.hstack([meta, map_track(trail, tiles=tiles.value)], widths=[1, 6]))
+
+    if not upload.value:
+        for file in fs.glob("apps/public/gpx-trails/*.gpx"):
+            trail = get_gpx_data(file_path=file, upload=upload.value)
+            meta = mo.vstack(
+                [mo.md(trail.name), mo.stat(label="trail length", value=str(round(trail.length / 1_000, 1)) + " km")]
+            )
+            trails.append(mo.hstack([meta, map_track(trail, tiles=tiles.value)], widths=[1, 6]))
+
+    if upload.value:
+        for file in files.value:
+            trail = get_gpx_data(name=file.name, contents=file.contents, upload=upload.value)
+            meta = mo.vstack(
+                [mo.md(trail.name), mo.stat(label="trail length", value=str(round(trail.length / 1_000, 1)) + " km")]
+            )
+            trails.append(mo.hstack([meta, map_track(trail, tiles=tiles.value)], widths=[1, 6]))
 
     mo.vstack([mo.right(tiles)] + trails, gap=2)
     return
