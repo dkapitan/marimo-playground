@@ -1,9 +1,10 @@
 # /// script
-# requires-python = ">=3.12"
+# requires-python = ">=3.13"
 # dependencies = [
 #     "folium>=0.20.0",
-#     "fsspec==2025.12.0",
+#     "fsspec==2025.3.2",
 #     "gpxpy>=1.6.2",
+#     "requests==2.32.4",
 #     "marimo>=0.18.3",
 # ]
 # [tool.marimo.display]
@@ -61,7 +62,7 @@ def _():
         if not upload and file_path:
             with fs.open(file_path, "r") as gpx_file:
                 name = file_path
-                gpx = parse(gpx_file)
+                gpx = parse(gpx_file.read())
 
         if upload:
             name = name
