@@ -18,7 +18,7 @@ def _(mo):
 
     ORG, REPO = "dkapitan", "marimo-playground"
     fs = GithubFileSystem(ORG, REPO)
-    return ROOT, fs
+    return (ROOT,)
 
 
 @app.cell
@@ -30,20 +30,26 @@ def _(mo):
 
 
 @app.cell
-def _(ROOT, fs):
+def _(ROOT):
     csv_file = "notebooks/public/penguins.csv"
-    of = fs.open(csv_file, "rt")
-    with of as f:
-        csv_fsspec = f.read()
+    # of = fs.open(csv_file, "rt")
+    # with of as f:
+    #     csv_fsspec = f.read()
 
     with open(ROOT / csv_file, "rt") as f:
         csv_local = f.read()
-    return csv_fsspec, csv_local
+    return (csv_local,)
 
 
 @app.cell
-def _(csv_fsspec, csv_local):
-    assert csv_local == csv_fsspec
+def _():
+    # assert csv_local == csv_fsspec
+    return
+
+
+@app.cell
+def _(csv_local):
+    print(csv_local)
     return
 
 
