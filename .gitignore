@@ -177,6 +177,7 @@ cython_debug/
 .DS_Store
 .marimo
 test/
+gpx_viewer/
 
 .devbox
 # enforcing strict reproducibility not suitable for template
