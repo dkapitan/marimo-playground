@@ -18,6 +18,7 @@ app = marimo.App(width="medium")
 @app.cell(hide_code=True)
 def _():
     import marimo as mo
+
     return (mo,)
 
 
@@ -41,7 +42,6 @@ def _(mo):
 
     HERE = mo.notebook_location()
 
-
     @dataclass
     class Trail:
         name: str
@@ -54,10 +54,14 @@ def _(mo):
                 avg_lat = sum(p[0] for p in self.track) / len(self.track)
                 avg_lon = sum(p[1] for p in self.track) / len(self.track)
                 self.centre = (avg_lat, avg_lon)
-                self.length = sum([haversine_distance(p[0][0], p[0][1], p[1][0], p[1][1]) for p in pairwise(self.track)])
+                self.length = sum(
+                    [
+                        haversine_distance(p[0][0], p[0][1], p[1][0], p[1][1])
+                        for p in pairwise(self.track)
+                    ]
+                )
             else:
                 self.centre = (52.0, 5.0)  # Default fallback (Netherlands approx)
-
 
     def clean_url(url):
         """
@@ -82,10 +86,11 @@ def _(mo):
         safe_fragment = urllib.parse.quote(parts.fragment)
 
         # 5. Reassemble the components
-        cleaned_url = urllib.parse.urlunsplit((parts.scheme, parts.netloc, safe_path, safe_query, safe_fragment))
+        cleaned_url = urllib.parse.urlunsplit(
+            (parts.scheme, parts.netloc, safe_path, safe_query, safe_fragment)
+        )
 
         return cleaned_url
-
 
     # https://github.com/pola-rs/polars/blob/405b194a9a9e40e295571451b99bc68f9bbffcaf/py-polars/src/polars/io/_utils.py#L299
     def process_file_url(path: str, encoding: str | None = None) -> BytesIO:
@@ -95,10 +100,12 @@ def _(mo):
             else:
                 return BytesIO(f.read().decode(encoding).encode("utf8"))
 
-
     def list_gpx_files(tree=tree):
-        return [item.get("path") for item in load(process_file_url(tree)).get("tree") if item.get("path").endswith(".gpx")]
-
+        return [
+            item.get("path")
+            for item in load(process_file_url(tree)).get("tree")
+            if item.get("path").endswith(".gpx")
+        ]
 
     # https://github.com/marimo-team/marimo/blob/355103923506a3296d0e0695fb9e874c737da6ae/marimo/_utils/platform.py#L11
     def is_pyodide() -> bool:
@@ -106,13 +113,12 @@ def _(mo):
 
         return "pyodide" in sys.modules
 
-
     def get_gpx_data(file_path=None, name=None, contents=None, upload=False):
         """Parses contents of GPX file and returns name, center_lat, center_lon, and points."""
         if not upload and file_path:
             name = file_path
             if is_pyodide():
-                gpx = parse(process_file_url(file_path).read())
+                gpx = parse(process_file_url(file_path))
             else:
                 with open(file_path, "r") as gpx_file:
                     gpx = parse(gpx_file.read())
@@ -136,7 +142,6 @@ def _(mo):
                     points.append((point.latitude, point.longitude))
 
         return Trail(name, points)
-
 
     def map_track(trail: Trail, tiles: str):
         m = folium.Map(location=trail.centre, zoom_start=13, tiles=tiles)
@@ -162,6 +167,7 @@ def _(mo):
         MousePosition().add_to(m)
 
         return m
+
     return HERE, get_gpx_data, is_pyodide, list_gpx_files, map_track, tree
 
 
@@ -200,7 +206,9 @@ def _(files, header, mo, upload):
         display = mo.hstack(
             [
                 header,
-                mo.vstack([mo.hstack([mo.md("upload your own files").right(), upload]), files]),
+                mo.vstack(
+                    [mo.hstack([mo.md("upload your own files").right(), upload]), files]
+                ),
             ],
             widths=[1, 1],
         )
@@ -239,11 +247,15 @@ def _(
                     ),
                 ]
             )
-            trails.append(mo.hstack([meta, map_track(trail, tiles=tiles.value)], widths=[1, 6]))
+            trails.append(
+                mo.hstack([meta, map_track(trail, tiles=tiles.value)], widths=[1, 6])
+            )
 
     if upload.value:
         for file in files.value:
-            trail = get_gpx_data(name=file.name, contents=file.contents, upload=upload.value)
+            trail = get_gpx_data(
+                name=file.name, contents=file.contents, upload=upload.value
+            )
             meta = mo.vstack(
                 [
                     mo.md(trail.name),
@@ -253,7 +265,9 @@ def _(
                     ),
                 ]
             )
-            trails.append(mo.hstack([meta, map_track(trail, tiles=tiles.value)], widths=[1, 6]))
+            trails.append(
+                mo.hstack([meta, map_track(trail, tiles=tiles.value)], widths=[1, 6])
+            )
 
     mo.vstack([mo.right(tiles)] + trails, gap=2)
     return
