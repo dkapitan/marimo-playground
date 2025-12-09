@@ -226,7 +226,7 @@ def _(
 
     if not upload.value:
         if is_pyodide():
-            gpx_files = list_gpx_files(tree)
+            gpx_files = [ROOT / path for path in list_gpx_files(tree)]
         else:
             gpx_files = ROOT.glob("apps/public/gpx-trails/*.gpx")
         for file in gpx_files:
